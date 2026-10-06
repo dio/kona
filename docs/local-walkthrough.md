@@ -113,18 +113,13 @@ existing credentials rather than renewing them.
 
 ### B. Cert-manager: managed leaf renewal
 
-Instead of A, install cert-manager before Kona:
+Instead of A, install cert-manager using its [official Helm chart](https://cert-manager.io/docs/installation/helm/) before Kona. This installs its CRDs as well:
 
 ```sh
-curl --fail --location \
-  https://github.com/cert-manager/cert-manager/releases/download/v1.21.2/cert-manager.yaml \
-  -o "$KONA_RUN_DIR/cert-manager.yaml"
-printf '%s  %s\n' \
-  e03b668ec8675214af6b0a671699d088f2601fa3878e0dbe1b41d3feafd1879f \
-  "$KONA_RUN_DIR/cert-manager.yaml" | shasum -a 256 --check
-# Continue only if the checksum reports OK. Linux may need the Perl shasum package,
-# or use sha256sum --check instead.
-kubectl --kubeconfig "$KONA_KUBECONFIG" apply -f "$KONA_RUN_DIR/cert-manager.yaml"
+helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.21.2 --namespace cert-manager --create-namespace \
+  --kubeconfig "$KONA_KUBECONFIG" --set crds.enabled=true \
+  --wait --wait-for-jobs --timeout 5m
 for deployment in cert-manager cert-manager-cainjector cert-manager-webhook; do
   kubectl --kubeconfig "$KONA_KUBECONFIG" -n cert-manager \
     rollout status "deployment/$deployment" --timeout=180s
@@ -132,7 +127,7 @@ done
 export KONA_ISSUER=cert-manager
 ```
 
-The chart creates its own SelfSigned/CA Issuers and leaf Certificates. It does not reuse
+The Kona chart creates its own SelfSigned/CA Issuers and leaf Certificates. It does not reuse
 EG's control-plane CA. See [certificate details](certificates.md) for lifetimes and trust.
 
 ### Install (either choice)
@@ -279,7 +274,7 @@ if [ -n "${KONA_TLS_FORWARD_PID:-}" ]; then
   kill "$KONA_TLS_FORWARD_PID" 2>/dev/null || true
 fi
 k3d cluster delete "$KONA_CLUSTER"
-rm -f "$KONA_KUBECONFIG" "$KONA_RUN_DIR/ca.pem" "$KONA_RUN_DIR/cert-manager.yaml" \
+rm -f "$KONA_KUBECONFIG" "$KONA_RUN_DIR/ca.pem" \
   "$KONA_RUN_DIR/proxy-forward.log" "$KONA_RUN_DIR/admin-forward.log" \
   "$KONA_RUN_DIR/tls-forward.log"
 rmdir "$KONA_RUN_DIR"

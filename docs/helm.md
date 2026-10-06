@@ -55,7 +55,16 @@ through Helm values or printed. There is no unattended renewal controller in thi
 
 ## Path B: cert-manager
 
-Install cert-manager v1.21.2 (including its CRDs) first, then:
+Install cert-manager v1.21.2 using its official Helm chart (including CRDs):
+
+```sh
+helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.21.2 --namespace cert-manager --create-namespace \
+  --kubeconfig "$KONA_KUBECONFIG" --set crds.enabled=true \
+  --wait --wait-for-jobs --timeout 5m
+```
+
+Then install Kona:
 
 ```sh
 helm upgrade --install kona ./charts/kona \
