@@ -1,0 +1,11 @@
+{{- if .Values.pki.trustBundle }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-ca
+  annotations:
+    helm.sh/resource-policy: keep
+data:
+  ca.crt: |
+{{ .Values.pki.trustBundle | indent 4 }}
+{{- end }}

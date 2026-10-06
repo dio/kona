@@ -1,0 +1,23 @@
+{{- if and (eq .Values.pki.mode "cert-manager") .Values.pki.certManager.nextCA }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-ca-next
+spec:
+  isCA: true
+  commonName: kona-spike-ca-next
+  secretName: {{ .Release.Name }}-ca-next
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: {{ .Release.Name }}-selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Release.Name }}-ca-next
+spec:
+  ca:
+    secretName: {{ .Release.Name }}-ca-next
+{{- end }}

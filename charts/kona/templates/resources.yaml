@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-data
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: {{ .Release.Name }}-data}
+  template:
+    metadata:
+      labels: {app: {{ .Release.Name }}-data}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: data
+        image: {{ .Values.images.data.repository }}:{{ .Values.images.data.tag }}
+        imagePullPolicy: {{ .Values.images.data.pullPolicy }}
+        ports:
+        - {name: https, containerPort: 8443}
+        - {name: admin, containerPort: 8080}
+        readinessProbe:
+          tcpSocket: {port: https}
+        volumeMounts:
+        - {name: tls, mountPath: /tls, readOnly: true}
+        - {name: trust, mountPath: /trust, readOnly: true}
+      volumes:
+      - name: tls
+        secret:
+          secretName: {{ .Release.Name }}-server
+      - name: trust
+        configMap:
+          name: {{ .Release.Name }}-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-data
+spec:
+  selector: {app: {{ .Release.Name }}-data}
+  ports:
+  - {name: https, port: 8443, targetPort: https}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  backendTLS:
+    clientCertificateRef:
+      name: {{ .Release.Name }}-client
+      kind: Secret
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        name: {{ .Release.Name }}-proxy
+        container:
+          image: {{ .Values.images.proxy.repository }}:{{ .Values.images.proxy.tag }}
+          env:
+          - name: GODEBUG
+            value: cgocheck=0
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                  - name: envoy
+                    imagePullPolicy: {{ .Values.images.proxy.pullPolicy }}
+      envoyService:
+        type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: {{ .Release.Name }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  gatewayClassName: {{ .Release.Namespace }}-{{ .Release.Name }}
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Release.Name }}-app
+spec:
+  parentRefs:
+  - name: {{ .Release.Name }}
+  rules:
+  - matches:
+    - path: {type: PathPrefix, value: /}
+    backendRefs:
+    - name: {{ .Release.Name }}-data
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: {{ .Release.Name }}-data
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: {{ .Release.Name }}-data
+  validation:
+    hostname: {{ .Release.Name }}-data.{{ .Release.Namespace }}.svc.cluster.local
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: {{ .Release.Name }}-ca

@@ -1,0 +1,26 @@
+# EG must already be installed with EnvoyPatchPolicy and XDSNameSchemeV2 enabled.
+images:
+  proxy:
+    repository: kona-proxy
+    tag: spike
+    pullPolicy: IfNotPresent
+  data:
+    repository: kona-data
+    tag: spike
+    pullPolicy: IfNotPresent
+pki:
+  # certgen: one-shot bootstrap; no unattended renewal controller.
+  # cert-manager: requires cert-manager installed; leaves renew automatically.
+  mode: certgen
+  # Explicit PEM bundle for staged rollover. Empty bootstraps from the initial CA.
+  # Once supplied, keep supplying it on subsequent upgrades.
+  trustBundle: ""
+  certManager:
+    nextCA: false
+    # Empty selects <release>-ca; switch to <release>-ca-next after A+B is observed.
+    leafIssuer: ""
+# Additional identity used by the integration tests only.
+testIdentities: false
+source:
+  pollMS: 500
+  maxAgeMS: 3000

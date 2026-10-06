@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kona
+description: Envoy dynamic-module data channel with mTLS and staged CA rollover
+version: 0.1.0
+appVersion: "spike"
+type: application

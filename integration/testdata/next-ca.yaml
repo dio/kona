@@ -1,0 +1,40 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kona-ca-next
+spec:
+  isCA: true
+  commonName: kona-spike-ca-next
+  secretName: kona-ca-next
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: kona-selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kona-ca-next
+spec:
+  ca:
+    secretName: kona-ca-next
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kona-client-next
+spec:
+  secretName: kona-client-next
+  duration: 1h
+  renewBefore: 20m
+  uris:
+  - spiffe://kona.test/gateway
+  usages:
+  - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  issuerRef:
+    name: kona-ca-next

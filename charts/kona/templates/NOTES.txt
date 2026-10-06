@@ -1,0 +1,15 @@
+Kona is installed in {{ .Release.Namespace }} using {{ .Values.pki.mode }} issuance.
+
+The data service requires mTLS. Envoy owns the module's upstream TLS connection.
+Private credentials are never placed in Helm values or dynamic-module configuration.
+
+{{ if eq .Values.pki.mode "certgen" -}}
+The bootstrap job creates missing credentials only. This mode has no automatic renewal.
+Generated Secrets/initial trust ConfigMap survive helm uninstall; remove them explicitly
+when retiring the deployment, or reuse them deliberately when reinstalling.
+{{- else -}}
+cert-manager must be installed. Observe Certificate Ready status before using the gateway.
+{{- end }}
+
+For CA rollover use A -> A+B -> B trust and wait for both peers before removing A.
+See docs/ca-rollover.md and docs/helm.md in the Kona repository.

@@ -1,0 +1,39 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyPatchPolicy
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ .Release.Name }}
+  type: JSONPatch
+  jsonPatches:
+  - type: type.googleapis.com/envoy.config.listener.v3.Listener
+    name: tcp-8080
+    operation:
+      op: add
+      path: /default_filter_chain/filters/0/typed_config/http_filters/0
+      value:
+        name: {{ .Release.Name }}
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+          dynamic_module_config:
+            name: {{ .Release.Name }}
+            module:
+              local:
+                filename: /usr/local/lib/libkona.so
+            do_not_close: true
+          filter_name: kona
+          filter_config:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: {{ dict "source" (dict "remote" (dict "cluster" (printf "httproute/%s/%s-app/rule/0" .Release.Namespace .Release.Name) "authority" (printf "%s-data.%s.svc.cluster.local" .Release.Name .Release.Namespace) "path" "/data")) "poll_ms" .Values.source.pollMS "max_age_ms" .Values.source.maxAgeMS | toJson | quote }}
+  - type: type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+    name: http-8080
+    operation:
+      op: add
+      path: /virtual_hosts/0/routes/0/metadata
+      value:
+        filter_metadata:
+          kona:
+            key: demo

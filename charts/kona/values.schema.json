@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "pki": {"type":"object", "properties": {"mode":{"enum":["certgen","cert-manager"]},"trustBundle":{"type":"string"}}},
+    "source": {"type":"object", "properties": {"pollMS":{"type":"integer","minimum":50},"maxAgeMS":{"type":"integer","minimum":50}}}
+  }
+}
