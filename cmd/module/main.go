@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dio/kona/internal/source"
 	"github.com/envoyproxy/envoy/source/extensions/dynamic_modules/sdk/go"
 	_ "github.com/envoyproxy/envoy/source/extensions/dynamic_modules/sdk/go/abi"
 	"github.com/envoyproxy/envoy/source/extensions/dynamic_modules/sdk/go/shared"
-	"github.com/dio/kona/internal/source"
 )
 
 type config struct {

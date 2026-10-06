@@ -26,7 +26,12 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Check formatting
-        run: test -z "$(git ls-files -z '*.go' | xargs -0 gofmt -l)"
+        run: |
+          unformatted=$(git ls-files -z '*.go' | xargs -0 gofmt -l)
+          if [ -n "$unformatted" ]; then
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
       - run: go mod verify
       - run: make test
       - run: go vet ./internal/... ./integration ./cmd/bootstrap ./cmd/dataserver
