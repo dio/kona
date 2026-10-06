@@ -128,7 +128,10 @@ export KONA_ISSUER=cert-manager
 ```
 
 The Kona chart creates its own SelfSigned/CA Issuers and leaf Certificates. It does not reuse
-EG's control-plane CA. See [certificate details](certificates.md) for lifetimes and trust.
+EG's control-plane CA. EG in this walkthrough still uses its default certgen, even
+when Kona uses cert-manager. One cert-manager installation could manage both using
+separate issuers; see [the CA separation rationale and alternative installation order](certificates.md#why-eg-and-kona-use-separate-cas).
+See [certificate details](certificates.md) for lifetimes and trust.
 
 ### Install (either choice)
 

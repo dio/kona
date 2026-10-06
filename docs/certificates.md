@@ -4,7 +4,50 @@ Issuance and delivery are separate responsibilities. Kona uses an Envoy-owned HT
 connection: the module names a cluster; EG configures that cluster; Envoy performs TLS.
 No certificate or private key is passed in module configuration.
 
-## Path A: cert-manager (default)
+## Why EG and Kona use separate CAs
+
+One cert-manager installation can manage certificates for both EG and Kona. The
+controller manages issuance and renewal; each Certificate's issuer reference selects
+its signing authority. Sharing the controller does not imply sharing a CA or leaf key.
+
+| Connection | Signing authority | Leaf identities |
+|---|---|---|
+| Envoy to EG control plane (including xDS) | EG control-plane CA | EG server and Envoy control-plane client |
+| Envoy/Kona to application data service | Kona application CA | Kona upstream client and data-service server |
+
+The same Envoy process uses different client certificates for these connections.
+Kona's upstream client credential is delivered through EG/SDS; it is independently
+issued from the credential Envoy uses to authenticate to EG itself.
+
+Separate CAs keep application trust changes and CA rollover independent of control-plane
+trust. A compromised application signing key should not become a trusted authority for
+control-plane identities. Leaf certificates also remain distinct, with the SANs, usages,
+and private keys appropriate to their roles. Application authorization still verifies
+Kona's exact client URI; a trusted chain alone does not grant access.
+
+A shared CA could be configured deliberately, but would couple trust and rollover across
+these connections. The spike keeps separate roots and issuers as its default boundary.
+A shared cert-manager controller still has powerful access to both sets of Secrets;
+separate CAs do not isolate them from compromise of that controller or its permissions.
+
+### Using cert-manager for EG too
+
+EG supports pre-provisioned control-plane certificates managed by cert-manager; see
+its [custom control-plane certificate guide](https://gateway.envoyproxy.io/docs/install/custom-cert/).
+To use this option, the installation order is:
+
+1. Install cert-manager once.
+2. Provision EG's CA, issuer, and required control-plane certificate Secrets; wait for readiness.
+3. Install EG using those Secrets, following its version-specific custom-certificate guide.
+4. Install Kona with `pki.mode=cert-manager`, creating its separate application CA and leaves.
+
+The current walkthrough and live fixture use **EG's default certgen for the control
+plane**. Selecting cert-manager for Kona changes only Kona's application certificates.
+The all-cert-manager EG setup is an available extension, not a live-qualified mode of
+this spike. Its control-plane renewal and CA rollover require their own propagation
+checks; Kona's rollover tests do not establish control-plane rollover behavior.
+
+## Path A: cert-manager (integration default)
 
 ```sh
 make integration
