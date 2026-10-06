@@ -12,3 +12,9 @@ FROM gcr.io/distroless/static-debian12:nonroot AS data
 COPY --from=build /out/kona-data /kona-data
 COPY --from=build /out/kona-bootstrap /kona-bootstrap
 ENTRYPOINT ["/kona-data"]
+
+# One Linux environment: Go tests + one Envoy child process; no Kubernetes.
+FROM build AS native-test
+COPY --from=proxy /usr/local/bin/envoy /usr/local/bin/envoy
+ENV ENVOY_BIN=/usr/local/bin/envoy KONA_MODULE=/out/libkona.so
+CMD ["go", "test", "-v", "-count=1", "-timeout=60s", "./native"]

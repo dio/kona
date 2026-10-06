@@ -105,3 +105,14 @@ Pushes and pull requests run Go formatting, race tests, vet, native Linux Docker
 for both images, and Helm lint, rendering for both issuer modes, and packaging.
 CI does not run the live k3d mTLS/rollover fixture; use `make integration` for that lane.
 No images or chart releases are published by CI.
+
+## Single-Envoy native tests (no Docker)
+
+`make native-test ENVOY_BIN=/path/to/envoy` builds a host-native module and runs Go
+integration tests against one local Envoy process. On macOS arm64 this uses the
+`0a804c57` (1.40.0-dev) binary and matching `native.mod` SDK override. The regular
+Go module and Docker/EG lane retain their 1.38 pins.
+
+The reusable [`envoytest`](envoytest) runner follows Transit's process-test pattern.
+Tests own in-process HTTP/TLS fixtures; the runner owns Envoy startup, readiness,
+logs and cleanup. See [native testing and macOS download instructions](docs/native-testing.md).

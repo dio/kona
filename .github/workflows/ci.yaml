@@ -34,7 +34,7 @@ jobs:
           fi
       - run: go mod verify
       - run: make test
-      - run: go vet ./internal/... ./integration ./cmd/bootstrap ./cmd/dataserver
+      - run: go vet ./internal/... ./integration ./cmd/bootstrap ./cmd/dataserver ./envoytest ./native
 
   images:
     name: Native module and data images
