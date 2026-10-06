@@ -7,6 +7,9 @@ image containing `libkona.so`, EnvoyProxy, GatewayClass/Gateway, HTTPRoute,
 BackendTLSPolicy, EnvoyPatchPolicy, and certificate bootstrap resources. EG remains a
 separate installation. The chart does not install or take ownership of EG or cert-manager.
 
+To also manage EG's control-plane certificates with cert-manager, use the
+[EG + Kona cert-manager installation path](eg-cert-manager.md).
+
 ## Prerequisites and images
 
 EG v1.9.1 must have EnvoyPatchPolicy enabled and `XDSNameSchemeV2` enabled. The fixture

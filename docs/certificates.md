@@ -43,8 +43,8 @@ To use this option, the installation order is:
 
 The current walkthrough and live fixture use **EG's default certgen for the control
 plane**. Selecting cert-manager for Kona changes only Kona's application certificates.
-The all-cert-manager EG setup is an available extension, not a live-qualified mode of
-this spike. Its control-plane renewal and CA rollover require their own propagation
+The [EG + Kona cert-manager guide](eg-cert-manager.md) provides a runnable fresh-install
+alternative, including the certificate manifest. Its control-plane renewal and CA rollover require their own propagation
 checks; Kona's rollover tests do not establish control-plane rollover behavior.
 
 ## Path A: cert-manager (integration default)

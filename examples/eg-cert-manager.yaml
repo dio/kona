@@ -1,0 +1,106 @@
+# EG v1.9.1, envoy-gateway-system namespace, cluster.local domain.
+# Apply before installing EG; leave EG's certgen hook enabled.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: envoy-gateway-system
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: eg-selfsigned
+  namespace: envoy-gateway-system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: envoy-gateway-ca
+  namespace: envoy-gateway-system
+spec:
+  secretName: envoy-gateway-ca
+  commonName: kona-local-eg-ca
+  isCA: true
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Never
+  issuerRef:
+    name: eg-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: eg-issuer
+  namespace: envoy-gateway-system
+spec:
+  ca:
+    secretName: envoy-gateway-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: envoy-gateway
+  namespace: envoy-gateway-system
+spec:
+  secretName: envoy-gateway
+  commonName: envoy-gateway
+  dnsNames:
+  - envoy-gateway
+  - envoy-gateway.envoy-gateway-system
+  - envoy-gateway.envoy-gateway-system.svc
+  - envoy-gateway.envoy-gateway-system.svc.cluster.local
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+  usages: [digital signature, key encipherment, server auth]
+  issuerRef:
+    name: eg-issuer
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: envoy
+  namespace: envoy-gateway-system
+spec:
+  secretName: envoy
+  commonName: "*"
+  dnsNames: ["*.envoy-gateway-system"]
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+  usages: [digital signature, key encipherment, client auth]
+  issuerRef:
+    name: eg-issuer
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: envoy-rate-limit
+  namespace: envoy-gateway-system
+spec:
+  secretName: envoy-rate-limit
+  commonName: "*"
+  dnsNames: ["*.envoy-gateway-system"]
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+  usages: [digital signature, key encipherment, server auth, client auth]
+  issuerRef:
+    name: eg-issuer
+    kind: Issuer

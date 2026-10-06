@@ -87,6 +87,10 @@ The data image also contains the in-cluster certificate bootstrap binary.
 
 ## 4. Install Envoy Gateway
 
+For cert-manager-managed EG control-plane certificates too, follow the
+[EG + Kona cert-manager path](eg-cert-manager.md) now, then resume this guide at step 6.
+The commands below use EG's default certgen.
+
 ```sh
 helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
   --version v1.9.1 --namespace envoy-gateway-system --create-namespace \
@@ -158,10 +162,10 @@ Start both forwards in the same terminal; preserve their PIDs for cleanup:
 
 ```sh
 kubectl --kubeconfig "$KONA_KUBECONFIG" -n envoy-gateway-system \
-  port-forward deployment/kona-proxy 18080:8080 > "$KONA_RUN_DIR/proxy-forward.log" 2>&1 &
+  port-forward --address=127.0.0.1 deployment/kona-proxy 18080:8080 > "$KONA_RUN_DIR/proxy-forward.log" 2>&1 &
 KONA_PROXY_FORWARD_PID=$!
 kubectl --kubeconfig "$KONA_KUBECONFIG" -n kona \
-  port-forward deployment/kona-data 18081:8080 > "$KONA_RUN_DIR/admin-forward.log" 2>&1 &
+  port-forward --address=127.0.0.1 deployment/kona-data 18081:8080 > "$KONA_RUN_DIR/admin-forward.log" 2>&1 &
 KONA_ADMIN_FORWARD_PID=$!
 cat "$KONA_RUN_DIR/proxy-forward.log" "$KONA_RUN_DIR/admin-forward.log"
 ```
@@ -218,7 +222,7 @@ Extract only the public root, then forward HTTPS:
 kubectl --kubeconfig "$KONA_KUBECONFIG" -n kona get configmap kona-ca \
   -o go-template='{{index .data "ca.crt"}}' > "$KONA_RUN_DIR/ca.pem"
 kubectl --kubeconfig "$KONA_KUBECONFIG" -n kona \
-  port-forward service/kona-data 18443:8443 > "$KONA_RUN_DIR/tls-forward.log" 2>&1 &
+  port-forward --address=127.0.0.1 service/kona-data 18443:8443 > "$KONA_RUN_DIR/tls-forward.log" 2>&1 &
 KONA_TLS_FORWARD_PID=$!
 ```
 

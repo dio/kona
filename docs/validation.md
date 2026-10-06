@@ -77,3 +77,15 @@ connection; production stream draining remains unimplemented.
 Before the spike there were no k3d clusters. The authorized unused-image prune reclaimed
 1.174 GB and preserved images referenced by existing containers. These results predate publication of the source to `dio/kona`. Images and the packaged
 chart remain local artifacts; they have not been published to an image/chart registry.
+
+## EG control plane with cert-manager
+
+The [optional manual path](eg-cert-manager.md) was also exercised on a fresh local
+k3d cluster: official cert-manager Helm chart v1.21.2, pre-issued EG credentials,
+EG v1.9.1, then Kona with its own cert-manager CA. All installation/readiness gates
+passed. Actual module output, mTLS receipts, distinct CA fingerprints, and the
+cert-manager issuer annotations on EG Secrets were checked. Initial port-forward
+verification collided with an occupied local port; free loopback ports resolved it.
+Evidence is in ignored `artifacts/eg-cert-manager-smoke.json`. The test cluster was
+removed. This does not qualify scheduled EG certificate renewal, control-plane CA
+rollover, or the rate-limit service.
