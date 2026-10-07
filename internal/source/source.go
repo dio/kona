@@ -75,6 +75,36 @@ func (s *Store) Lookup(key string, now time.Time, maxAge time.Duration) ([]byte,
 	return bytes.Clone(v), ok
 }
 
+// PollFile refreshes the store until stop is closed. Run it in a dedicated goroutine.
+// Filesystem I/O cannot always be interrupted: an in-flight read may outlive stop,
+// but its result is discarded and no further reads are started after it returns.
+func (s *Store) PollFile(path string, interval time.Duration, stop <-chan struct{}) {
+	timer := time.NewTimer(0)
+	defer timer.Stop()
+	for {
+		select {
+		case <-stop:
+			return
+		case <-timer.C:
+		}
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		data, err := ReadFile(path)
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		if err == nil {
+			_ = s.Publish(data, time.Now())
+		}
+		timer.Reset(interval)
+	}
+}
+
 // ReadFile opens the path on every refresh, including Kubernetes projected-volume swaps.
 func ReadFile(path string) ([]byte, error) {
 	f, err := os.Open(path)

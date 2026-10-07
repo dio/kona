@@ -109,10 +109,10 @@ No images or chart releases are published by CI.
 ## Single-Envoy native tests (no Docker)
 
 `make native-test ENVOY_BIN=/path/to/envoy` builds a host-native module and runs Go
-integration tests against one local Envoy process. On macOS arm64 this uses the
-`0a804c57` (1.40.0-dev) binary and matching `native.mod` SDK override. The regular
-Go module and Docker/EG lane retain their 1.38 pins.
+integration tests against one local Envoy process. The host binary must match
+the Envoy 1.38 SDK revision in `go.mod` (`f1dd21b16c24`). All build and test lanes
+use the same module dependencies.
 
 The reusable [`envoytest`](envoytest) runner follows Transit's process-test pattern.
 Tests own in-process HTTP/TLS fixtures; the runner owns Envoy startup, readiness,
-logs and cleanup. See [native testing and macOS download instructions](docs/native-testing.md).
+logs and cleanup. See [native testing requirements](docs/native-testing.md).

@@ -53,6 +53,12 @@ func (*configFactory) Create(h shared.HttpFilterConfigHandle, b []byte) (shared.
 		}
 		return f, nil
 	}
+	if c.Source.Filename != "" {
+		// This worker only owns Go data. Never wait for filesystem I/O on
+		// Envoy's dispatcher, including during OnDestroy.
+		go f.store.PollFile(c.Source.Filename, time.Duration(c.PollMS)*time.Millisecond, f.stop)
+		return f, nil
+	}
 	scheduler := h.GetScheduler()
 	f.wg.Add(1)
 	go func() {
@@ -73,12 +79,6 @@ func (*configFactory) Create(h shared.HttpFilterConfigHandle, b []byte) (shared.
 }
 func (f *factory) refresh() {
 	if f.destroyed || f.pending {
-		return
-	}
-	if f.cfg.Source.Filename != "" {
-		if b, err := source.ReadFile(f.cfg.Source.Filename); err == nil {
-			_ = f.store.Publish(b, time.Now())
-		}
 		return
 	}
 	r := f.cfg.Source.Remote

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ func TestModule(t *testing.T) {
 	if os.Getenv("ENVOY_BIN") == "" {
 		t.Skip("set ENVOY_BIN and KONA_MODULE for native Envoy tests")
 	}
-	for _, source := range []string{"inline", "file"} {
+	for _, source := range []string{"inline", "file", "blocked-file"} {
 		t.Run(source, func(t *testing.T) {
 			filename := filepath.Join(t.TempDir(), "data.json")
 			publish := func(value string) {
@@ -29,9 +30,22 @@ func TestModule(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			publish(`{"demo":{"message":"first"}}`)
+			var pipe *os.File
+			if source == "blocked-file" {
+				if err := exec.Command("mkfifo", filename).Run(); err != nil {
+					t.Fatal(err)
+				}
+				var err error
+				pipe, err = os.OpenFile(filename, os.O_RDWR, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { pipe.Close() })
+			} else {
+				publish(`{"demo":{"message":"first"}}`)
+			}
 			input := map[string]any{"inline": map[string]any{"demo": map[string]string{"message": "first"}}}
-			if source == "file" {
+			if source != "inline" {
 				input = map[string]any{"filename": filename}
 			}
 			config, _ := json.Marshal(map[string]any{"source": input, "poll_ms": 50, "max_age_ms": 500})
@@ -72,6 +86,15 @@ func TestModule(t *testing.T) {
 							return
 						}
 					}
+				}
+			}
+			if source == "blocked-file" {
+				// The FIFO has a writer but no data or EOF. Envoy's admin
+				// readiness (checked by Start) must work while the read blocks.
+				await(503, "")
+				publish(`{"demo":{"message":"first"}}`)
+				if err := pipe.Close(); err != nil {
+					t.Fatal(err)
 				}
 			}
 			await(200, `{"message":"first"}`)
